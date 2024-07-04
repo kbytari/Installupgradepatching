@@ -1,0 +1,174 @@
+SQL Server Upgradations
+------------------------------
+* We can upgrade SS from lower version to higher version.
+* SS supports 2 types of upgradation strategies.
+	* In-Place
+	* Side-by-Side
+
+1. In Place Upgradation
+----------------------------
+* It is the process of upgradating the lower version to higher version.
+* Server downtime is required.
+* Same instance server components are upgraded to higher version            components
+* Instance name remain same.
+
+Pre Upgrade Steps
+------------------------
+	* Backup all your databases including system as well as user 	  	  	  defined.
+	* Generate scripts for
+		* Logins
+		* Linked Servers
+		* Jobs
+		* Alerts
+		* Maintenance Plans
+		* Operators
+		* DB Mirroring Endpoints
+	* Stop monitoring tools if you are using.
+	* Stop anti-virus tools if any.
+
+Tools used for upgradation
+-------------------------------
+	* Third party tools from
+		www.idera.com
+		www.red-gate.com
+	* Upgrade Advisor
+		* We can install from redist folder of SS dump.
+		      F:\SQL Server 2008\x86\redist\Upgrade Advisor
+
+FAQ:- In log shipping environment which server should be upgraded first?
+Ans:	
+	Secondary Server
+Steps
+	* Run upgrade Advisor by selecting SS 2000 or SS 2005 	instance.
+		* Start--> Programs--> MSSS2008--> Upgrade Advisor
+		* Launch Upgrade Advisor Analysis Wizard
+		* Next
+		* Enter Server Name:	Server1
+		  Components		SQL Server
+		* Instance Name:	sql2k5 (Automatically Selected)
+		* Next
+		* Next
+		* Run
+	* Select Upgrade Advisor Report Viewer--> View the report for                     possible upgradation Errors.
+	
+	* Run SQL Server 2008 Setup --> Go to Installation --> Select 	  the option
+		"Upgrade from SQL Server 2000 or SQL Server 2005
+	* Under Setup Support Rules --> OK
+	* Install
+	* under setup support files--> Next
+	* Next--> Next--> Next
+	* Instance to Upgrade= dev1 (2005 version)
+	* Next
+	* Next
+	* Next
+	* Enter Service Account for Full Text Search Service
+	* Next..
+	* Upgrade
+
+Post Upgrade Steps
+-----------------------------
+	* Verify the upgradation from Summary.txt file
+	* Verify the version number
+		* Connect to DEV1 instance --> New Query
+			select serverproperty('productversion')
+				10.0.1600.22
+	* Change the Compatability level of User defined databases to 		100
+		* R.C on database--> Properties--> Options
+			Compatability Level:100
+		* OK
+	* Verify the connections, jobs, maintenance plans etc
+	* Check consistance of databases using
+		dbcc checkdb('dbname')
+	* Now allow the users to work.
+
+2. Side by Side Upgradation
+----------------------------------------
+* It is required if you want to allow some appls to work with prev version   and   some appls to connect to new version.
+* Older version remain same.
+* There will be 2 instances after upgradation process.
+
+Steps
+	1. Install SQL Server 2008 version new instance.
+	2. Backup all the databases(required dbs) from prev version-->                      restore in new version.
+	3. Generate scripts of jobs, Alerts, Maintenance Plans etc and run                       in New Version.
+	4. Change compatability level of databases (User defined)
+	5. Verify the connectivity and Jobs.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

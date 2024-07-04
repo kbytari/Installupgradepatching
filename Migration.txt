@@ -1,0 +1,19 @@
+Hi All,
+ 
+Please find migration and upgradation notes attached.
+ 
+Migration Quick Steps:
+1) Run Update Advisor
+2) Install the Target Instance
+3) Backup and Restore
+4) Transfer the logins (using SSIS Package also is possible)
+5) Fix Orphan Users
+6) Change Compatibility Level
+7) DBCC CHECKDB
+8) DBCC UPDATEUSAGE
+9) sp_updatestats
+10)If <SQL 2005, change TORN_PAGE_DETECTION to CHECKSUM
+11)Transfer Jobs Script (using SSIS Package also is possible)
+12)Transfer Linked Servers using Script
+13)If HA is involved, break it and reconfigure after migration.
+ 

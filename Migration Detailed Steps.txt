@@ -1,0 +1,170 @@
+Migration Steps:
+Migration is moving databases from one instance to another with minimal downtime whereas upgradation involves more downtime.
+
+Upgradation is referred as InPlace Upgrade and the other method is Side-by-Side Migration.
+
+Pre-Implementation:
+1) Run Upgrade Advisor Tool and contact Application Team with necessary actions to be performed /confirmed from their end.
+
+2) Take a backup of all databases. (System and User) 
+
+3) If required take a system state backup.
+
+
+Implementation:
+
+1) Install the Target Instance
+
+2) Restore the database from source to target.
+
+Before restoring analyze the Source and Target and restore databases accordingly.
+
+Homogenous instances (Restore System and User database if it is entire instance migration)
+
+For Heterogenous instances restore only User databases.
+
+restore database UDB1 from disk=N'D:\UDB1.bak' with 
+move 'UDB1' to 'C:\Program Files\Microsoft SQL Server\MSSQL10_50.MIGRATESRC\MSSQL\Data\UDB1.mdf',
+move 'UDB1_log' to 'C:\Program Files\Microsoft SQL Server\MSSQL10_50.MIGRATESRC\MSSQL\Data\UDB1_log.ldf'
+
+
+
+Post-Implementation:
+
+1) Change the compatibility level of database to Target.
+
+2) Run DBCC UPDATEUSAGE 
+
+DBCC UPDATEUSAGE('database_name') WITH COUNT_ROWS
+
+Up until SQL 2005, the table or index row counts and the page counts for data, leaf, and reserved pages could become out of sync. DBCC UPDATEUSAGE resolves this issue.
+
+From SQL Server 2005 onwards the mis calculated values of free spaces and any integrity issues related to metadata are resolved using DBCC UPDATEUSAGE. 
+
+3) Run DBCC CHECKDB on the database in the target. 
+
+Check the allocation, structural and logical integrity of a database and its objects
+
+DBCC CHECKDB('database_name') WITH ALL_ERRORMSGS
+DBCC CHECKDB('database_name') WITH NO_INFOMSGS
+
+
+4) Update statistics 
+
+sp_updatestats
+
+The sp_updatestats system stored procedure runs the UPDATE STATISTICS command against every user and system table in the database.
+
+Command: 
+
+1) sp_updatestats
+Will update statistics for all objects including system and user on a specific database.
+
+2) 
+use DB1
+go
+UPDATE STATISTICS dbo.TAB11
+
+Updates statistics of a single table.
+
+3) 
+use DB1
+go
+UPDATE STATISTICS dbo.TAB11
+WITH SAMPLE 60 PERCENT
+
+
+4)
+use DB1
+go 
+UPDATE STATISTICS dbo.TAB11
+WITH FULLSCAN
+
+5)
+Finding date of last updated statistics
+
+USE AdventureWorks2008R2;
+GO
+SELECT name AS stats_name, 
+STATS_DATE(object_id, stats_id) AS statistics_update_date
+FROM sys.stats 
+WHERE object_id = OBJECT_ID('dbo.Tab11');
+GO
+
+
+6)
+use DB1
+go 
+UPDATE STATISTICS dbo.TAB11 TAB11_Sno_IDX
+
+Updating statistics of Index
+
+
+
+5) Set database options
+
+Database settings 
+
+If migrating from Pre SQL 2005, change the Page Verify option from TORN_PAGE_DETECTION to CHECKSUM.
+
+6) Transfer the logins
+
+Precautions when transferring logins:
+a) After login creation script is executed, delete unwanted logins like SA,BUILTIN\Admins,SQL Server Groups.
+
+b) Verify especially the windows logins, which one is a Login or a Group mapped to a login.
+
+So that windows team can be informed correctly about OS Users and Groups.
+
+c) Collect information about Server Roles / Permissions  for all logins.
+
+d) SID is already considered in the script of the sp_help_revlogin. 
+
+The generated script contains SID and hence there would be minimal chances of orphan users.
+
+sp_hexadecimal code contains Conversion logic from hexadecimal to character.
+
+sp_help_revlogin uses sp_hexadecimal for its processing.
+
+
+7) Fixing Orphan Users
+Orphan users can exist when database is restored and the logins for these users are not present in the source. It is also possible that orphan user exists in the source itself.
+
+It is also possible that DBA doing the migration has missed some logins.
+
+Finding orphan users:
+sp_change_users_login report
+
+Fix Orphan Users:
+UPDATE_ONE: This fixes the provided Login name and Username.
+
+sp_change_users_login UPDATE_ONE,'OrphanUsr','Orphan'
+
+AUTOFIX:
+Fixes the provided username and assumes the same login name as the user name.
+
+sp_change_users_login AUTOFIX ,'OrphanUsr'
+
+8) Transfer the Jobs  
+Transfer of jobs can be done through scripting of Jobs and execute the code at the target.
+
+SSIS Package can be used to transfer the jobs from source to target.
+
+SSIS (BI Studio) -> New Service Project -> SSIS Services -> Control Flow -> Drag Job Transfer Task -> Open properties of the task -> Configure Source and Destination and other config values.
+
+9) If High Availability is involved, ensure that the HA option is first disabled before doing Migration.
+
+10) Inform and Confirm from Application team that the newly Migrated instance is functional without any errors/warnings. 
+
+Testing will be performed by Application Team.
+
+
+11) As part of rollback plan, it is good to configure REPLICATION between Destination and Source involved in migration.
+
+This is just anticipating that if any errors occur data is available at both 2012 and 2005 and it becomes easy to switch between the source and destination.
+
+
+
+
+
+

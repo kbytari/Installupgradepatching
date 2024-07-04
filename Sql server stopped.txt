@@ -1,0 +1,7 @@
+ 1. Ping the server and check the status 
+2. Check whether services are running well - services.msc 
+3. Make sure the TCP end points are configured properly  
+4. Firewall could be one of the reasons. 
+5. Check with the authentication & user privileges. 
+6. Restart the instance after confirming the Trace Flags.-t3608 (optional) 
+7. This can have many reasons and right reason can be found only when we look into Event viewer and what has caused SQL Server down.

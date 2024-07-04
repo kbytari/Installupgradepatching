@@ -1,0 +1,11 @@
+Migration/Upgradation:-
+1) Restore
+2) Transfer the logins
+3) Fix Orphan User issue (if any)
+4) Change Compatibility Level
+5) DBCC UPDATEUSAGE('dbname') 
+6) DBCC CHECKDB
+7) sp_updatestats
+   UPDATE STATISTICS
+8) Transfer the Jobs (using Script/BIDS)
+9) CHECKSUM/Torn Page Detection Database Settings

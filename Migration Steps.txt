@@ -1,0 +1,60 @@
+Migration Steps:
+
+1) Run Upgrade Advisor to find faults    before    starting the migration/upgradation.  
+
+2) Disable all HA options and ensure all jobs are also disabled. 
+
+3) Take backup of Source (2000/2005) and restore at destination (2005/2008) (or) follow Detach/Attach. ONLY user databases should be backed up.
+
+4) Change compatibility level from 80 to 90 for all the database(s) that have been migrated
+   sp_dbcmptlevel
+
+5) Transfer all the logins from Source to the Destination using
+
+   sp_help_revlogin
+
+6) Fix orphan users issue if any. 
+
+   sp_change_users_login
+
+7) DBCC UPDATEUSAGE
+   The table or index row counts and the page counts for data, leaf, and reserved pages could become out of synch with time in the database system tables. DBCC UPDATEUSAGE command corrects these inaccuracies and ensures the counts are updated.
+
+DBCC UPDATEUSAGE('database_name') WITH COUNT_ROWS
+
+8) DBCC CHECKDB
+DBCC CHECKDB is a commonly used command that can check the allocation, structural and logical integrity of a database and its objects.
+
+DBCC CHECKDB('database_name') WITH ALL_ERRORMSGS
+
+CHECKDB found 0 allocation errors and 0 consistency errors in database 'DBName'.
+
+
+9) Update Statistics
+
+Statistics of SQL Server 2005 can be outdated and hence it is very important to update the statistics after moving the database to 2008.
+
+Update statistics updates the header information(Page), count information, histograms, metadata allocations.
+
+sp_updatestats
+
+10) Changing Page Verify Option  
+
+Torn Page Detection: Torn Page detection is a method that calculates Bit values for every 512 byte sector and stores the final values in the page header. While retrieving the page it checks if the page is Corrupted or not.
+
+Checksum: Checksum generates a checksum number and stores in the page header and when retrieving the page checks if the checksum is correct or not and hence this is how it validates the page is 'not corrupted'/'corrupted'.
+
+NONE: This doesn't perform any page verification
+
+11) Transfer of Jobs(/Logins) can also be done using DTS Packages by DTS/SSIS team. If there are any DTS Packages in SQL Server 2000 they can be migrated to SSIS Packages in 2005.
+
+If Jobs have to be transferred by DBA, then manually he/she has to script all the jobs and execute that commands at the destination.
+
+12) Finally after migration is completed ask Application team to perform App checks and validate if SQL Server 2005 is compatible with the respective application or not.
+    Once final Go is given by App team that confirms that migration is a success.
+
+
+
+
+
+

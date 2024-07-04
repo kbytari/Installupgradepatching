@@ -1,0 +1,10 @@
+1.Make sure SQL Server is running on the target machine (SQL Server Configuration)
+2.Ensure TCP/IP is enabled (SQL Server Configuration)
+3.Ensure “Allow remote connections to this server” is enabled (SSMS Server properties) 
+Note: default setting in SQL Server 2005 is 'Disabled' & in SQL Server  2008 is 'Enabled'.
+4. Check SQL Port (Port:1433, if you havent changed the default) is open across network (Firewall at both ends & particularly the server)
+5.If using dynamic ports then check SQL Server Browser Service is started and not blocked by firewall (at server)
+6.Make sure the IP address is correct. Ping the server and see if the IP address is what you think it should be. If not then…
+7.Check aliases in SQL Server Configuration
+8.See if there is an invalid entry in Window hosts file on the machine you are connecting from
+9.See if there is an invalid entry in Network DNS.

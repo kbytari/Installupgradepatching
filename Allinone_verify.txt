@@ -1,0 +1,72 @@
+I have accidently deleted some important records from one table.Can you please provide any suggestion to recover those records, as those are very important for us.
+The things I have is,
+backup: I have only two months old backup
+Transaction log: Not yet taken
+Recovery Model: Full
+Please provide a solution to retrieve those records.
+
+
+-----------------------------------------------------------
+FAQ:- Reason for suspect mode
+
+If one or more database files are not available. 
+If the entire database is not available. 
+If one or more database files are corrupted. 
+If a database resource is being held by the operating system.
+
+How to recover?
+
+Scenario 1: If the file is full
+
+Execute sp_resetstatus. 
+
+syntax : sp_resetstatus database_name
+
+Use ALTER DATABASE to add a data file or log file to the database.
+
+Stop and restart SQL Server. 
+
+With the extra space provided by the new data file or log file, SQL Server should be able to complete recovery of the database
+
+Scenario1: If the data file was damaged. (17204)
+
+	* Take T.Log backup
+	* Restore last Full backup
+	* Restore T.Log backup
+	* Database comes online
+
+Scenario2 : If the T.Log file was damaged (17207)
+Ex:
+	* Take any user defined db for example : MyDB
+	* Check the current location of files
+		sp_helpdb  MyDB
+	* Stop server
+	* Move the T.Log file into different folder
+	* Start server --> DB goes into suspect mode
+	   select databasepropertyex('mydb','status')
+
+* Steps to Recover
+--step1: Make the db into single user
+1) Alter database mydb set Single_User
+
+--step2: Set the db into emergency mode
+2) Alter database mydb set Emergency
+
+--step3: Run checkdb with required repair level
+3) DBCC CheckDB ('mydb', REPAIR_ALLOW_DATA_LOSS)
+
+--step4: Set the db into multi user mode
+4) Alter database mydb set Multi_User
+
+----------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+

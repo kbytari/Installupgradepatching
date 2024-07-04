@@ -1,0 +1,8 @@
+1. SCM – start instance (run: sqlservermanager.msc) 
+2. OS services (run: services.msc) 
+3. SAC – Surface Area Configuration (2005) 
+4. On the command line: Run – net start service name Find the service name in services.msc 
+5. Using object explorer (Right click on the instance and try to start) 
+6. Startup parameters have incorrect file path locations. Right click the instance -> Properties -> General Tab -> startup parameters 
+7. Need to check whether Services are disabled or not Services.msc 
+8. We will check basing upon the error message 

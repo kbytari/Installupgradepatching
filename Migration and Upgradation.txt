@@ -1,0 +1,61 @@
+Upgradation:
+Upgradation involves overwriting existing SQL Server instance and upgrading from one version to another version.
+
+Migration:
+Migration involves moving data (databases/objects) between homogenous and heterogenous SQL Server instances and also to other RDBMS softwares.
+
+Reasons of Upgradation:
+1) Upgrading between versions.
+2) Upgrading with a Service Pack
+3) Upgrading from one edition to another.
+
+Reasons of Migration:
+1) Upgrading server hardware  (from old server to new server)
+2) OS Upgradation
+3) Upgrading to a newer version
+4) Moving databases from one drive to another drive
+5) Moving data between different RDBMS
+6) 32-Bit to 64-Bit is Migration.
+7) Prod-QA/Dev refresh activity 
+
+
+Different ways of Migration:
+1) Backup and Restore
+2) Detach and Attach
+3) Copy Database Wizard
+4) Import/Export
+5) BCP
+
+Difference between Upgrade/Migrate:
+Upgrade is change of state i.e. from 
+i)  Version to another version
+ii) Edition to another edition
+iii)License upgrade
+iv) Service Pack upgrade
+
+Migration is moving from one location to another location and also between versions. Migration means moving a database from one server to another, or from one drive to another.
+
+Migrate a database from
+i)   2000 to 2005 instance
+ii)  2005 to 2008 instance
+iii) 2008 to 2012 instance
+
+Upgradation/Migration can be implemented in kind of two ways:
+
+1) Inplace Upgrade
+2) Side-by-Side Migrate
+
+Inplace Upgrade is overwriting an existing instance to new instance. 
+
+Side-by-Side upgrade is minimal downtime, a new instance is built in parallel to the existing instance. Once tested the new instance is released.
+
+In-Place Upgrade Steps:
+1) Take a backup for safety measure (All Databases)
+2) Run Upgrade Advisor to detect any potential issues during upgradation
+3) Check the 32-bit or 64-bit version of SQL Server 2005 instance
+4) Launch the SQL Server 2008 installation and select Upgrade SQL Server instance 2000 or 2005 option.
+5) Select the instance to upgrade and complete Inplace upgrade from 2005 to 2008.
+ 
+
+
+

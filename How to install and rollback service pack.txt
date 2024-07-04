@@ -1,0 +1,73 @@
+
+How to apply service pack and hot fixes?
+
+Ans:
+1)Test on Dev\Test SQL servers
+2)Take the downtime from client,Application team and application
+ managers
+3)download Copy of the Service pack setup and hot fixes  from S/W 
+repository server to local server
+
+4)Take the log backups before we apply the service pack and make sure
+that last full backups are successful.
+
+5)Keep the server in maintenance mode(This means server 
+alerts can be ignored by monitoring tool)
+
+6)Stop the Sql server service before applying the service pack
+
+7)Start applying the service pack and hot fixes.
+
+8)After installing the service pack restart the server.
+
+9)check the service pack details using the below command
+
+Select Serverproperty('productlevel')
+
+10)check the server is available for applications.
+
+
+
+After installation details will be written to summary.txt
+
+
+Note: As per microsoft suggestion restart windows server. 
+If we don't restart the server, server will be in script 
+upgrade mode.
+
+
+
+
+
+
+How to Rollback service pack:
+
+
+Go to Control Panel-->Uninstall Programs -->View Installed updates
+-->under Ms sql server 2008 R2, 
+right click on service pack to uninstall service pack as follows
+
+When we click uninstall setup wizard will continue, 
+then we need to select required instance to uninstall the
+ servicepack.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,16 @@
+sys.databases : Lists all the databases in Sql Server.
+    sys.tables : Lists all the Tables in the database.
+    sys.views : Lists all the views in the database.
+    sys.procedures : Lists all the Procedures in the database.
+    sys.triggers : Lists all the Triggers in the database.
+
+    sys.columns : Lists all the columns of tables in database.
+    sys.syscolumns : Lists all the columns in database including of those SP.
+    sys.key_constraints : Lists all primary key or unique constraints in database. For primary    key TYPE = 'PK' and for unique keys TYPE = 'UQ'
+    sys.check_constraints : Lists all the Check Constraints in the database.
+    sys.default_constraints : Lists all the Default Constarints in the database.
+    sys.foreign_keys : Lists all the Foreign Keys in the database.
+
+    sys.syslogins : Lists all the login names in server.
+    sys.sql_logins : Lists all the Sql Authentication Logins in server.
+    sys.sysusers : Lists all the users in database.

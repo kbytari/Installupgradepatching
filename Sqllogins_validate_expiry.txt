@@ -1,0 +1,57 @@
+Alter procedure [dbo].[Sqllogins_validate_expiry]         
+as          
+begin   
+declare @count int          
+declare @val int          
+declare @name varchar(50)          
+declare @LockoutTime datetime          
+declare @daysleft int          
+declare @PasswordLastSetTime datetime 
+declare @PasswordExpiration  datetime      
+declare @LOGINPROPERTY int          
+declare @errorid int        
+declare @mailbody varchar(4000) 
+create table #logintable (sno int identity(1,1),usrname varchar(50),PasswordLastSetTime datetime ,DaysUntilExpiration int,PasswordExpiration datetime)    
+insert into #logintable(usrname,PasswordLastSetTime,DaysUntilExpiration,PasswordExpiration)
+SELECT SL.name AS LoginName,Convert(datetime,LOGINPROPERTY (SL.name, 'PasswordLastSetTime')) AS PasswordLastSetTime,convert (int,LOGINPROPERTY (SL.name, 'DaysUntilExpiration')) AS DaysUntilExpiration,DATEADD(dd, CONVERT(int, LOGINPROPERTY (SL.name, 'DaysUntilExpiration')), CONVERT(datetime, LOGINPROPERTY (SL.name, 'PasswordLastSetTime'))) AS PasswordExpiration FROM sys.sql_logins AS SL
+WHERE is_expiration_checked = 1 and is_policy_checked=1 and LOGINPROPERTY (SL.name, 'DaysUntilExpiration')<=15 ORDER BY LOGINPROPERTY (SL.name, 'PasswordLastSetTime') DESC
+select @val=count(*) from #logintable   
+set @count=1  
+set @mailbody = '<html><body><table border="1"><tr><th>Server</th><th>LoginName</th><th>PasswordLastresetTime</th><th>DaysLeft</th><th>PasswordExpiration</th></tr>'       
+while(@count<=@val)
+ begin  
+  select @name=usrname from #logintable where sno=@count
+  select @PasswordLastSetTime=PasswordLastSetTime from #logintable where sno=@count
+  select @PasswordExpiration=PasswordExpiration from #logintable where sno=@count
+  select @daysleft= DaysUntilExpiration from #logintable where sno=@count
+  set @mailbody=@mailbody+'<tr><td>'+isnull(@@servername,'')+ '</td><td>' +isnull(@name,'')+'</td><td>'+convert(varchar(30),@PasswordLastSetTime)+'</td><td>'+convert(varchar(30),@daysleft)+'</td><td>'+convert(varchar(30),@PasswordExpiration)+'</td></tr>' 
+  set @count=@count+1 
+ end  
+ if exists(select usrname from  #logintable)    
+begin    
+      
+      set @mailbody = @mailbody +'</table></body></html>'   
+      set @mailbody='<html><head></head>
+<body>
+<Br>
+</Br>
+<table border="0">
+<tr> <td> <p> Please chang the below logins in the table prior to expiration </p></td> </tr>
+</table><Br>
+</Br>'+@mailbody+'<br></br><table border="0">
+<tr> <td><B> Thanks! </B> </td> </tr>
+<tr> <td> Regards Admin
+</td> </tr>
+</table></body></html>'     
+
+EXEC msdb.dbo.sp_send_dbmail    
+@profile_name = 'Premprofile',    
+@recipients = 'asrinivasuvarma@corelogic.com',    
+@copy_recipients = 'asrinivasuvarma@corelogic.com',    
+@body_format = 'HTML',    
+@body = @mailbody,    
+@subject = 'Password expiration remainder mail';    
+     
+print @errorid       
+end  
+end

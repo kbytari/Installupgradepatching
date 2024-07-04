@@ -1,0 +1,11 @@
+ 1. Check whether  the ping request is working or not a. Ping ip address –t (-t for continuous pinging) 
+2. Checking the credentials a. Checking user name and password 
+3. Checking if the protocols are enabled or not a. Run-> sqlservermanager.msc 
+4. Checking if the login was created for that particular user or not a. Select * from syslogins b. Select * from sysusers 
+5. Check that the client and the server run on the same network protocol or not
+ 6. Checking if the login was disabled/expired 
+7. Check if the authentication mode is Windows only and where user is connecting to SQL Server Authentication Instance Properties ->Security tab 
+8. Maximum number of connections in connection pool Instance Properties -> Connections tab -> maximum concurrent user connections (0= unlimited) 
+9. Browser service is running but service account associated with Browser service has permission issues
+ 10. Check the error logs and give the solution based on error log information 
+11. Check the firewall issue using telnet command Telnet server name 1433.

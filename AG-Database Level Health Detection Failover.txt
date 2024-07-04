@@ -1,0 +1,26 @@
+Flexible automatic failover policy of the AG
+Before getting into the details of the topic, it is necessary that we understand the flexible automatic failover policy of AG (in short, the conditions for an automatic failover)
+As we know, three forms of failover exist — automatic, manual, and forced (with possible data loss). The form or forms of failover supported by a given secondary replica depends on its availability mode. An automatic failover occurs in response to a failure that causes a synchronized secondary replica to transition to the primary role (with guaranteed data protection). When the former primary replica becomes available, it transitions to the secondary role. Automatic failover requires that both the primary replica and the target secondary replica are running under synchronous-commit mode with the failover mode set to “Automatic”. In addition, the secondary replica must already be synchronized, have WSFC quorum, and meet the conditions specified by the flexible failover policy of the AG.
+The flexible failover policy of an availability group is defined by its failure-condition level and health-check timeout threshold.
+Health-check timeout threshold: Availability group performs a health check of the primary replica by calling the sp_server_diagnostics stored procedure on the instance of SQL Server that hosts the primary replica. The default timeout threshold for health-check is 30 seconds & sp_server_diagnostics return results at a 10-second interval ( usually 1/3 of the health-check timeout threshold). If sp_server_diagnostics is failing to return results, the AG will wait for the full interval of the health-check timeout threshold(30 seconds in our case) before determining that the primary replica is unresponsive. If the primary replica is unresponsive, an automatic failover is initiated, if currently supported.
+Failure-Condition Level: Depending on the health diagnostic information returned by sp_server_diagnostics, the automatic failover is triggered depending on the failure-condition level of the availability group. The failure-condition level specifies what failure conditions trigger an automatic failover. There are six failure-condition levels, which range from the least restrictive (level one) to the most restrictive (level six). You can refer the failure-condition levels in detail here.
+On detecting that an availability group has exceeded its failure condition level or its health-check timeout threshold, the availability group’s resource DLL responds back to the Windows Server Failover Clustering (WSFC) cluster. The WSFC cluster then initiates an automatic failover to the secondary replica.
+The motivation for DB level health detection failover enhancement
+sp_server_diagnostics does not perform health checks at the database level.
+Damaged databases and suspect databases are not detected by any failure-condition level. Therefore, a database that is damaged or suspect (whether due to a hardware failure, data corruption, or other issues) never triggers an automatic failover.
+What does this DB level health detection failover bring to the table!!??!!
+From SQL Server 2016, database level health detection (DB_FAILOVER) option is available and it notices when a database is no longer in the online status, when something goes wrong, and will trigger the automatic failover of the availability group. The database level health detection is enabled for the AG; therefore, database level health detection monitors every database in the AG. It cannot be enabled selectively for specific databases in the availability group.
+If your application depends on several databases to be highly available, group them into an availability group with the database health option turned on. It is a good option to help guarantee the high availability for your databases. For example, with database level health detection option on, if SQL Server was unable to write to the transaction log file for one of the databases, the status of that database would change to indicate failure, and the availability group would soon failover, and your application could reconnect and continue working with minimal interruption once the databases are online again.
+There is a new implementation of DB level health detection available in the latest servicing releases of SQL2017RTM CU9, SQL2016SP1 CU10 & SQL2016SP2 CU2; that also checks for
+Page or allocation corruption
+Checkpoint failures
+Disk corruption
+Hardware or memory corruption
+No disk space available in a filegroup
+Missing filegroup ID requests
+Wrong file ID requests
+Log corruption due to FILESTREAM operation log record
+FILESTREAM data container corruption
+Log Corruption
+You can always revert to the original (SQL Server 2016) implementation of database level health detection using TF 9576 as either a start-up parameter or enabled using DBCC TRACEON command if you don’t like the additional checks mentioned above.
+Note: Database failover is separate from flexible failover policy, the two options are independent.

@@ -1,0 +1,318 @@
+----MIGRATION------
+-----First create 2 LOGINS-------
+/****** Object:  Login [ACQUEON\LOGIN1]    Script Date: 08/09/2018 11:34:26 ******/
+/****** Object:  Login [ACQUEON\LOGIN1]    Script Date: 08/09/2018 11:34:26 ******/
+CREATE LOGIN [ACQUEON\LOGIN1] FROM WINDOWS WITH DEFAULT_DATABASE=[master], DEFAULT_LANGUAGE=[us_english]
+/****** Object:  Login [ACQUEON\LOGIN2]    Script Date: 08/09/2018 11:37:19 ******/
+/****** Object:  Login [ACQUEON\LOGIN2]    Script Date: 08/09/2018 11:37:19 ******/
+CREATE LOGIN [ACQUEON\LOGIN2] FROM WINDOWS WITH DEFAULT_DATABASE=[master], DEFAULT_LANGUAGE=[us_english]
+---first fire the the command---
+sp_help_revlogin
+--this command will not work for 2005----
+----for that you have to use below script for logins ----
+---search in google as HOW TO TRANSFER LOGINS & PERMISSIONS move from one server to----
+----you can get microsoft MSDN link----
+USE master
+GO
+IF OBJECT_ID ('sp_hexadecimal') IS NOT NULL
+  DROP PROCEDURE sp_hexadecimal
+GO
+CREATE PROCEDURE sp_hexadecimal
+    @binvalue varbinary(256),
+    @hexvalue varchar (514) OUTPUT
+AS
+DECLARE @charvalue varchar (514)
+DECLARE @i int
+DECLARE @length int
+DECLARE @hexstring char(16)
+SELECT @charvalue = '0x'
+SELECT @i = 1
+SELECT @length = DATALENGTH (@binvalue)
+SELECT @hexstring = '0123456789ABCDEF'
+WHILE (@i <= @length)
+BEGIN
+  DECLARE @tempint int
+  DECLARE @firstint int
+  DECLARE @secondint int
+  SELECT @tempint = CONVERT(int, SUBSTRING(@binvalue,@i,1))
+  SELECT @firstint = FLOOR(@tempint/16)
+  SELECT @secondint = @tempint - (@firstint*16)
+  SELECT @charvalue = @charvalue +
+    SUBSTRING(@hexstring, @firstint+1, 1) +
+    SUBSTRING(@hexstring, @secondint+1, 1)
+  SELECT @i = @i + 1
+END
+
+SELECT @hexvalue = @charvalue
+GO
+ 
+IF OBJECT_ID ('sp_help_revlogin') IS NOT NULL
+  DROP PROCEDURE sp_help_revlogin
+GO
+CREATE PROCEDURE sp_help_revlogin @login_name sysname = NULL AS
+DECLARE @name sysname
+DECLARE @type varchar (1)
+DECLARE @hasaccess int
+DECLARE @denylogin int
+DECLARE @is_disabled int
+DECLARE @PWD_varbinary  varbinary (256)
+DECLARE @PWD_string  varchar (514)
+DECLARE @SID_varbinary varbinary (85)
+DECLARE @SID_string varchar (514)
+DECLARE @tmpstr  varchar (1024)
+DECLARE @is_policy_checked varchar (3)
+DECLARE @is_expiration_checked varchar (3)
+
+DECLARE @defaultdb sysname
+ 
+IF (@login_name IS NULL)
+  DECLARE login_curs CURSOR FOR
+
+      SELECT p.sid, p.name, p.type, p.is_disabled, p.default_database_name, l.hasaccess, l.denylogin FROM 
+sys.server_principals p LEFT JOIN sys.syslogins l
+      ON ( l.name = p.name ) WHERE p.type IN ( 'S', 'G', 'U' ) AND p.name <> 'sa'
+ELSE
+  DECLARE login_curs CURSOR FOR
+
+
+      SELECT p.sid, p.name, p.type, p.is_disabled, p.default_database_name, l.hasaccess, l.denylogin FROM 
+sys.server_principals p LEFT JOIN sys.syslogins l
+      ON ( l.name = p.name ) WHERE p.type IN ( 'S', 'G', 'U' ) AND p.name = @login_name
+OPEN login_curs
+
+FETCH NEXT FROM login_curs INTO @SID_varbinary, @name, @type, @is_disabled, @defaultdb, @hasaccess, @denylogin
+IF (@@fetch_status = -1)
+BEGIN
+  PRINT 'No login(s) found.'
+  CLOSE login_curs
+  DEALLOCATE login_curs
+  RETURN -1
+END
+SET @tmpstr = '/* sp_help_revlogin script '
+PRINT @tmpstr
+SET @tmpstr = '** Generated ' + CONVERT (varchar, GETDATE()) + ' on ' + @@SERVERNAME + ' */'
+PRINT @tmpstr
+PRINT ''
+WHILE (@@fetch_status <> -1)
+BEGIN
+  IF (@@fetch_status <> -2)
+  BEGIN
+    PRINT ''
+    SET @tmpstr = '-- Login: ' + @name
+    PRINT @tmpstr
+    IF (@type IN ( 'G', 'U'))
+    BEGIN -- NT authenticated account/group
+
+      SET @tmpstr = 'CREATE LOGIN ' + QUOTENAME( @name ) + ' FROM WINDOWS WITH DEFAULT_DATABASE = [' + @defaultdb + ']'
+    END
+    ELSE BEGIN -- SQL Server authentication
+        -- obtain password and sid
+            SET @PWD_varbinary = CAST( LOGINPROPERTY( @name, 'PasswordHash' ) AS varbinary (256) )
+        EXEC sp_hexadecimal @PWD_varbinary, @PWD_string OUT
+        EXEC sp_hexadecimal @SID_varbinary,@SID_string OUT
+ 
+        -- obtain password policy state
+        SELECT @is_policy_checked = CASE is_policy_checked WHEN 1 THEN 'ON' WHEN 0 THEN 'OFF' ELSE NULL END FROM sys.sql_logins WHERE name = @name
+        SELECT @is_expiration_checked = CASE is_expiration_checked WHEN 1 THEN 'ON' WHEN 0 THEN 'OFF' ELSE NULL END FROM sys.sql_logins WHERE name = @name
+ 
+            SET @tmpstr = 'CREATE LOGIN ' + QUOTENAME( @name ) + ' WITH PASSWORD = ' + @PWD_string + ' HASHED, SID = ' + @SID_string + ', DEFAULT_DATABASE = [' + @defaultdb + ']'
+
+        IF ( @is_policy_checked IS NOT NULL )
+        BEGIN
+          SET @tmpstr = @tmpstr + ', CHECK_POLICY = ' + @is_policy_checked
+        END
+        IF ( @is_expiration_checked IS NOT NULL )
+        BEGIN
+          SET @tmpstr = @tmpstr + ', CHECK_EXPIRATION = ' + @is_expiration_checked
+        END
+    END
+    IF (@denylogin = 1)
+    BEGIN -- login is denied access
+      SET @tmpstr = @tmpstr + '; DENY CONNECT SQL TO ' + QUOTENAME( @name )
+    END
+    ELSE IF (@hasaccess = 0)
+    BEGIN -- login exists but does not have access
+      SET @tmpstr = @tmpstr + '; REVOKE CONNECT SQL TO ' + QUOTENAME( @name )
+    END
+    IF (@is_disabled = 1)
+    BEGIN -- login is disabled
+      SET @tmpstr = @tmpstr + '; ALTER LOGIN ' + QUOTENAME( @name ) + ' DISABLE'
+    END
+    PRINT @tmpstr
+  END
+
+  FETCH NEXT FROM login_curs INTO @SID_varbinary, @name, @type, @is_disabled, @defaultdb, @hasaccess, @denylogin
+   END
+CLOSE login_curs
+DEALLOCATE login_curs
+RETURN 0
+GO
+
+-----Now again fire the below command after the script----
+sp_help_revlogin
+
+----IT will give only information of logins that has been created but not "SERVER ROLES"---
+---For that information you need to run one more script which is provide in google ----
+---my suggestion go for datavail.com script------
+-- Scripting Out the Logins, Server Role Assignments, and Server Permissions
+-- ************************************************************************************************************************
+-- Copyright © 2015 by JP Chen of DatAvail Corporation
+-- This script is free for non-commercial purposes with no warranties. 
+
+-- CRITICAL NOTE: You’ll need to change your results to display more characters in the query result.
+-- Under Tools –> Options –> Query Results –> SQL Server –> Results to Text to increase the maximum number of characters 
+-- returned to 8192 the maximum or to a number high enough to prevent the results being truncated.
+-- ************************************************************************************************************************
+SET NOCOUNT ON
+-- Scripting Out the Logins To Be Created
+SELECT 'IF (SUSER_ID('+QUOTENAME(SP.name,'''')+') IS NULL) BEGIN CREATE LOGIN ' +QUOTENAME(SP.name)+
+			   CASE 
+					WHEN SP.type_desc = 'SQL_LOGIN' THEN ' WITH PASSWORD = ' +CONVERT(NVARCHAR(MAX),SL.password_hash,1)+ ' HASHED, CHECK_EXPIRATION = ' 
+						+ CASE WHEN SL.is_expiration_checked = 1 THEN 'ON' ELSE 'OFF' END +', CHECK_POLICY = ' +CASE WHEN SL.is_policy_checked = 1 THEN 'ON,' ELSE 'OFF,' END
+					ELSE ' FROM WINDOWS WITH'
+				END 
+	   +' DEFAULT_DATABASE=[' +SP.default_database_name+ '], DEFAULT_LANGUAGE=[' +SP.default_language_name+ '] END;' COLLATE SQL_Latin1_General_CP1_CI_AS AS [-- Logins To Be Created --]
+FROM sys.server_principals AS SP LEFT JOIN sys.sql_logins AS SL
+		ON SP.principal_id = SL.principal_id
+WHERE SP.type IN ('S','G','U')
+		AND SP.name NOT LIKE '##%##'
+		AND SP.name NOT LIKE 'NT AUTHORITY%'
+		AND SP.name NOT LIKE 'NT SERVICE%'
+		AND SP.name <> ('sa');
+
+-- Scripting Out the Role Membership to Be Added
+SELECT 
+'EXEC master..sp_addsrvrolemember @loginame = N''' + SL.name + ''', @rolename = N''' + SR.name + '''
+' AS [-- Server Roles the Logins Need to be Added --]
+FROM master.sys.server_role_members SRM
+	JOIN master.sys.server_principals SR ON SR.principal_id = SRM.role_principal_id
+	JOIN master.sys.server_principals SL ON SL.principal_id = SRM.member_principal_id
+WHERE SL.type IN ('S','G','U')
+		AND SL.name NOT LIKE '##%##'
+		AND SL.name NOT LIKE 'NT AUTHORITY%'
+		AND SL.name NOT LIKE 'NT SERVICE%'
+		AND SL.name <> ('sa');
+
+
+-- Scripting out the Permissions to Be Granted
+SELECT 
+	CASE WHEN SrvPerm.state_desc <> 'GRANT_WITH_GRANT_OPTION' 
+		THEN SrvPerm.state_desc 
+		ELSE 'GRANT' 
+	END
+    + ' ' + SrvPerm.permission_name + ' TO [' + SP.name + ']' + 
+	CASE WHEN SrvPerm.state_desc <> 'GRANT_WITH_GRANT_OPTION' 
+		THEN '' 
+		ELSE ' WITH GRANT OPTION' 
+	END collate database_default AS [-- Server Level Permissions to Be Granted --] 
+FROM sys.server_permissions AS SrvPerm 
+	JOIN sys.server_principals AS SP ON SrvPerm.grantee_principal_id = SP.principal_id 
+WHERE   SP.type IN ( 'S', 'U', 'G' ) 
+		AND SP.name NOT LIKE '##%##'
+		AND SP.name NOT LIKE 'NT AUTHORITY%'
+		AND SP.name NOT LIKE 'NT SERVICE%'
+		AND SP.name <> ('sa');
+
+SET NOCOUNT OFF
+--------------------------------------------
+----IT will give detailed information of every logins and server roles also-----
+-------------------------------------------------------------------------------
+-----------now create one database & insert some records in that---- 
+
+create database migrationdb
+use migrationdb
+go 
+create table sampletab(sno int, sname varchar(50))
+insert into sampletab values(1,'Ravi')
+insert into sampletab values(2,'Teja')
+select * from sampletab
+------------------------------------------------------------------
+----create some users for the logins at DB level----
+------FOR LOGIN1 script----
+USE [migrationdb]
+GO
+CREATE USER [USER1] FOR LOGIN [ACQUEON\LOGIN1]
+GO
+USE [migrationdb]
+GO
+ALTER AUTHORIZATION ON SCHEMA::[db_backupoperator] TO [USER1]
+GO
+USE [migrationdb]
+GO
+ALTER AUTHORIZATION ON SCHEMA::[db_datareader] TO [USER1]
+GO
+USE [migrationdb]
+GO
+EXEC sp_addrolemember N'db_backupoperator', N'USER1'
+GO
+USE [migrationdb]
+GO
+EXEC sp_addrolemember N'db_datareader', N'USER1'
+GO
+---------------------------------------------------------------
+---NOW create a BACKUP JOB------------
+USE [msdb]
+GO
+DECLARE @jobId BINARY(16)
+EXEC  msdb.dbo.sp_add_job @job_name=N'MIGRATIONDB BACKUP', 
+		@enabled=1, 
+		@notify_level_eventlog=0, 
+		@notify_level_email=2, 
+		@notify_level_netsend=2, 
+		@notify_level_page=2, 
+		@delete_level=0, 
+		@category_name=N'[Uncategorized (Local)]', 
+		@owner_login_name=N'ACQUEON\SQLDBA1', @job_id = @jobId OUTPUT
+select @jobId
+GO
+EXEC msdb.dbo.sp_add_jobserver @job_name=N'MIGRATIONDB BACKUP', @server_name = N'MIGRATION\INST2K05'
+GO
+USE [msdb]
+GO
+EXEC msdb.dbo.sp_add_jobstep @job_name=N'MIGRATIONDB BACKUP', @step_name=N'BACKUPJOB', 
+		@step_id=1, 
+		@cmdexec_success_code=0, 
+		@on_success_action=1, 
+		@on_fail_action=2, 
+		@retry_attempts=0, 
+		@retry_interval=0, 
+		@os_run_priority=0, @subsystem=N'TSQL', 
+		@command=N'BACKUP DATABASE migrationdb to disk= ''C:\mybackup\migrationdb_full.bak''', 
+		@database_name=N'migrationdb', 
+		@flags=0
+GO
+USE [msdb]
+GO
+EXEC msdb.dbo.sp_update_job @job_name=N'MIGRATIONDB BACKUP', 
+		@enabled=1, 
+		@start_step_id=1, 
+		@notify_level_eventlog=0, 
+		@notify_level_email=2, 
+		@notify_level_netsend=2, 
+		@notify_level_page=2, 
+		@delete_level=0, 
+		@description=N'', 
+		@category_name=N'[Uncategorized (Local)]', 
+		@owner_login_name=N'ACQUEON\SQLDBA1', 
+		@notify_email_operator_name=N'', 
+		@notify_netsend_operator_name=N'', 
+		@notify_page_operator_name=N''
+GO
+USE [msdb]
+GO
+DECLARE @schedule_id int
+EXEC msdb.dbo.sp_add_jobschedule @job_name=N'MIGRATIONDB BACKUP', @name=N'backup job', 
+		@enabled=1, 
+		@freq_type=4, 
+		@freq_interval=1, 
+		@freq_subday_type=4, 
+		@freq_subday_interval=5, 
+		@freq_relative_interval=0, 
+		@freq_recurrence_factor=1, 
+		@active_start_date=20180809, 
+		@active_end_date=99991231, 
+		@active_start_time=0, 
+		@active_end_time=235959, @schedule_id = @schedule_id OUTPUT
+select @schedule_id
+GO
+----------------------------------------

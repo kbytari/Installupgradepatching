@@ -1,0 +1,38 @@
+IN-PLACE UPGRADE:
+2.00) Review MS documents and confirm that the upgrade path is supported and feasible
+2.01) Install SSUA
+2.02) Run Upgrade Advisor and mitigate the path blocking
+2.03) Once confident that all path blocking are cleared, run SSUA again
+2.04) should be clean now and you are ready to go
+2.05) Back up everything (system+user databases)
+2.06) Run the setup and select upgrade
+2.07) Sit back and relax, should be all good
+2.08) Do remember to Rebuild Indexes and Update Statistics with Full Scan
+
+SIDE-BY-SIDE UPGRADE:
+2.00) Review MS documents and confirm that the upgrade path is supported and feasible
+2.01) Install SSUA
+2.02) Run Upgrade Advisor and mitigate the path blocking
+2.03) Once confident that all path blocking are cleared, run SSUA again
+2.04) should be clean now and you are ready to go
+2.05) Setup a new server with the desired SQL Server version and edition
+2.06) apply all the latest SP & CU
+2.07) Do configure one of the following
+a) DB Mirroring
+b) Log Shipping
+2.08) Sync Login
+2.09) Sync Jobs
+2.10) Sync or Migrate SSIS packes if any
+2.11) Break/pause 2.7 sub item
+2.09) Your dbs are live now on new server
+2.10) Do the application regression testing thoroughly (add manual test transaction)
+2.11) Once testing team sign off, re-enable LS or DBM
+2.12) Decide on the cut-off time
+2.13) Stop all the connection to live application
+2.14) Do the final/manual sync on LS/DBM
+2.15) Verify the Manual transaction is there on other side
+2.16) Ask your SA team to point the DNS to new server
+2.17) Break the LS or DBM again
+2.18) shutdown /disconnect network to old server
+2.19) Check the application
+2.20) All good ? Cool!!
